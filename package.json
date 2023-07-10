@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/maya-pfeiffer/tinyApp/issues"
   },
-  "homepage": "https://github.com/maya-pfeiffer/tinyApp#readme"
+  "homepage": "https://github.com/maya-pfeiffer/tinyApp#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
