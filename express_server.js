@@ -44,6 +44,14 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); 
-  res.send("Ok");
+  const id = generateRandomString();
+  const longURL = req.body.longURL; 
+  urlDatabase[id] = longURL;
+  res.redirect('/urls/${id}');
+});
+
+app.get("/u/:id", (req, res) => {
+  const shortURL = req.params.id;
+  const longURL = urlDatabase[shortURL];
+  res.redirect(longURL);
 });
