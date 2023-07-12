@@ -6,7 +6,17 @@ app.set("view engine", "ejs")
 
 app.use(express.urlencoded({ extended: true }));
 
-function generateRandomString() {};
+function generateRandomString(length = 6) {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let shortURLId = '';
+  
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    shortURLId += characters[randomIndex];
+  }
+  
+  return shortURLId;
+}
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -40,6 +50,15 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect('/urls');
 });
 
+app.post("/urls/:id", (req, res) => {
+  const id = req.params.id;
+  const newLongURL = req.body.longURL;
+  urlDatabase[id] = newLongURL;
+  // const templateVars = { id: id, longURL: newLongURL };
+  // res.render("urls_show", templateVars);
+  res.redirect('/urls');
+});
+
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
@@ -49,7 +68,7 @@ app.post("/urls", (req, res) => {
   const id = generateRandomString();
   const longURL = req.body.longURL; 
   urlDatabase[id] = longURL;
-  res.redirect('/urls/${id}');
+  res.redirect(`/urls/${id}`);
 });
 
 app.get("/u/:id", (req, res) => {
