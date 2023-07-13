@@ -27,10 +27,20 @@ function findUserByEmail(email) {
   return null;
 };
 
+function urlsForUser(id) {
+  const userURLs = {};
+  for (let key in urlDatabase) {
+    if (urlDatabase.hasOwnProperty(key) && urlDatabase[key].userID === id) {
+      userURLs[key] = urlDatabase[key].longURL;
+    }
+  }
+  return userURLs;
+}
+
 const urlDatabase = {
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
-    userID: "user2randomID"
+    userID: "user2RandomID"
   },
   "9sm5xK": {
     longURL: "http://www.google.com",
@@ -51,12 +61,6 @@ const users = {
   },
 };
 
-app.use((req, res, next) => {
-  const userId = req.cookies["user_id"];
-  res.locals.user = users[userId];
-  next();
-});
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
@@ -66,18 +70,24 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  if (!req.cookies.user_id) {
+    return res.status(401).send("You cannot view your URLS if you are not logged in.")
+  } 
+  const userId = req.cookies.user_id;
+  const userURLS = urlsForUser(userId);
   const templateVars = {
-    user_id: res.locals.user,
-    urls: urlDatabase
-  };
+    user: users[req.cookies.user_id],
+    urls: userURLS,
+  }
   res.render("urls_index", templateVars);
+
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    user: res.locals.user
-  };
-  if (res.locals.user) {
+  if (req.cookies.user_id) {
+    const templateVars = {
+      user: users[req.cookies.user_id]
+    };
     res.render("urls_new", templateVars);
   } else {
     res.redirect("/login");
@@ -85,6 +95,18 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
+  const userId = req.cookies.user_id;
+  const urlId = req.params.id;
+  const url = urlDatabase[urlId];
+  if (!url) {
+    return res.status(404).send("URL not found.");
+  }
+  if(!req.cookies.user_id) {
+    return res.status(401).send("You cannot view URLS if you are not logged in.")
+  }
+  if (url.userID !== userId) {
+    return res.status(403).send("This URL does not belong to you.");
+  }
   const id = req.params.id;
   delete urlDatabase[id];
   res.redirect('/urls');
@@ -98,23 +120,38 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
+  const userId = req.cookies.user_id;
+  const urlId = req.params.id;
+  const url = urlDatabase[urlId];
+  if (!url) {
+    return res.status(404).send("URL not found.");
+  }
+  if(!req.cookies.user_id) {
+    return res.status(401).send("You cannot view URLS if you are not logged in.")
+  }
+  if (url.userID !== userId) {
+    return res.status(403).send("This URL does not belong to you.");
+  }
   const templateVars = { 
-    user: res.locals.user,
+    user: users[req.cookies.user_id],
     id: req.params.id, 
-    longURL: urlDatabase[req.params.id] 
+    longURL: urlDatabase[req.params.id].longURL, 
   };
   res.render("urls_show", templateVars);
 });
 
 app.post("/urls", (req, res) => {
-  if (!res.locals.user) {
-    res.status(401).send("You cannot shorten URLS if you are not logged in.")
-  } else {
+  if (!req.cookies.user_id) {
+    return res.status(401).send("You cannot shorten URLS if you are not logged in.")
+  } 
   const id = generateRandomString();
   const longURL = req.body.longURL; 
-  urlDatabase[id] = longURL;
-  res.redirect(`/urls/${id}`);
-  }
+  urlDatabase[id] = {
+    longURL: longURL,
+    userID: req.cookies.user_id
+  };
+  res.redirect('/urls');
+  
 });
 
 app.get("/u/:id", (req, res) => {
@@ -123,7 +160,7 @@ app.get("/u/:id", (req, res) => {
   if (!longURL) {
     res.status(404).send("That URL does not exist.");
   } else {
-    res.redirect(longURL);
+    res.redirect(longURL.longURL);
   }
 });
 
@@ -139,23 +176,23 @@ app.post("/login", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  if (res.locals.user) {
+  if (req.cookies.user_id) {
     res.redirect("/urls")
   } else {
-    res.render("urls_login");
+    res.render("urls_login", { user: undefined });
   }
 });
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("urls_login");
+  res.redirect("/login");
 });
 
 app.get("/register", (req, res) => {
-  if (res.locals.user) {
+  if (req.cookies.user_id) {
     res.redirect("/urls");
   } else {
-  res.render("urls_register")
+  res.render("urls_register", { user: undefined })
   }
 });
 
