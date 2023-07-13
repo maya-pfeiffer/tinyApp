@@ -28,8 +28,14 @@ function findUserByEmail(email) {
 };
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "user2randomID"
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "user1RandomID"
+  },
 };
 
 const users = {
@@ -49,10 +55,6 @@ app.use((req, res, next) => {
   const userId = req.cookies["user_id"];
   res.locals.user = users[userId];
   next();
-});
-
-app.get("/", (req, res) => {
-  res.send("Hello!");
 });
 
 app.listen(PORT, () => {
@@ -75,7 +77,11 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: res.locals.user
   };
-  res.render("urls_new", templateVars);
+  if (res.locals.user) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 app.post("/urls/:id/delete", (req, res) => {
@@ -101,16 +107,24 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
+  if (!res.locals.user) {
+    res.status(401).send("You cannot shorten URLS if you are not logged in.")
+  } else {
   const id = generateRandomString();
   const longURL = req.body.longURL; 
   urlDatabase[id] = longURL;
   res.redirect(`/urls/${id}`);
+  }
 });
 
 app.get("/u/:id", (req, res) => {
   const shortURL = req.params.id;
   const longURL = urlDatabase[shortURL];
-  res.redirect(longURL);
+  if (!longURL) {
+    res.status(404).send("That URL does not exist.");
+  } else {
+    res.redirect(longURL);
+  }
 });
 
 app.post("/login", (req, res) => {
@@ -124,13 +138,25 @@ app.post("/login", (req, res) => {
   res.redirect("/urls");
 });
 
+app.get("/login", (req, res) => {
+  if (res.locals.user) {
+    res.redirect("/urls")
+  } else {
+    res.render("urls_login");
+  }
+});
+
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/login");
+  res.redirect("urls_login");
 });
 
 app.get("/register", (req, res) => {
-res.render("urls_register")
+  if (res.locals.user) {
+    res.redirect("/urls");
+  } else {
+  res.render("urls_register")
+  }
 });
 
 app.post("/register", (req, res) => {
@@ -153,8 +179,4 @@ app.post("/register", (req, res) => {
   users[userID] = newUser;
   res.cookie("user_id", userID);
   res.redirect("/urls");
-})
-
-app.get("/login", (req, res) => {
-  res.render("urls_login");
-})
+});
