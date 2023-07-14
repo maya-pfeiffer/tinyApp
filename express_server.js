@@ -6,12 +6,6 @@ const PORT = 8080;
 const { getUserByEmail } = require('./helpers');
 app.set('view engine', 'ejs');
 
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieSession({
-  name: "session",
-  keys: [generateRandomString(), generateRandomString()]
-}));
-
 const generateRandomString = function(length = 6) {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let shortURLId = '';
@@ -22,7 +16,11 @@ const generateRandomString = function(length = 6) {
   return shortURLId;
 };
 
-
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieSession({
+  name: "session",
+  keys: [generateRandomString(), generateRandomString()]
+}));
 
 const urlsForUser = function(id) {
   const userURLs = {};
@@ -186,7 +184,7 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.session = null;
+  res.clearCookie("session");
   res.redirect("/login");
 });
 
