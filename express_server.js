@@ -1,5 +1,6 @@
 const express = require('express');
 const cookieParser = require('cookie-parser')
+const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080;
 
@@ -171,6 +172,12 @@ app.post("/login", (req, res) => {
     res.status(403).send("Error 403: Invalid email or password");
     return;
   }
+  const passwordMatch = bcrypt.compareSync(password, user.password);
+  
+  if (!passwordMatch) {
+    res.status(401).send("Error 401: Incorrect password.");
+    return;
+  }
   res.cookie("user_id", user.id);
   res.redirect("/urls");
 });
@@ -208,10 +215,11 @@ app.post("/register", (req, res) => {
     res.status(400).send("Error 400: User already exsists.");
     return;
   }
+  const hashedPassword = bcrypt.hashSync(password, 10); 
   const newUser = {
     id: userID,
     email: email,
-    password: password
+    password: hashedPassword
   };
   users[userID] = newUser;
   res.cookie("user_id", userID);
