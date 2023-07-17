@@ -60,6 +60,10 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
+app.get('/', (req, res) => {
+  res.redirect('/login');
+});
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -110,7 +114,7 @@ app.post("/urls/:id/delete", (req, res) => {
 app.post("/urls/:id", (req, res) => {
   const id = req.params.id;
   const newLongURL = req.body.longURL;
-  urlDatabase[id] = newLongURL;
+  urlDatabase[id].longURL = newLongURL;
   res.redirect("/urls");
 });
 
@@ -145,7 +149,7 @@ app.post("/urls", (req, res) => {
     longURL: longURL,
     userID: req.session.user_id
   };
-  res.redirect('/urls');
+  res.redirect(`/urls/${id}`);
   
 });
 
@@ -218,3 +222,4 @@ app.post("/register", (req, res) => {
   req.session.user_id = userID;
   res.redirect("/urls");
 });
+
