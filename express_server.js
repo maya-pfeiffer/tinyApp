@@ -1,11 +1,19 @@
+//Import required modules
 const express = require('express');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
+
+//Create Express application
 const app = express();
 const PORT = 8080;
+
+//Import helper functions
 const { getUserByEmail } = require('./helpers');
+
+//Set the view engine to use EJS templates
 app.set('view engine', 'ejs');
 
+// Generates random strings needed for URLs and keys in cookie session configuration
 const generateRandomString = function(length = 6) {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let shortURLId = '';
@@ -16,12 +24,14 @@ const generateRandomString = function(length = 6) {
   return shortURLId;
 };
 
+//Configure Express middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: "session",
   keys: [generateRandomString(), generateRandomString()]
 }));
 
+//Helper function to search for URLs based on user ID
 const urlsForUser = function(id) {
   const userURLs = {};
   for (let key in urlDatabase) {
@@ -32,6 +42,8 @@ const urlsForUser = function(id) {
   return userURLs;
 };
 
+
+//Database of URLs and associated user information
 const urlDatabase = {
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
@@ -43,6 +55,7 @@ const urlDatabase = {
   },
 };
 
+//Database of example users
 const users = {
   userRandomID: {
     id: "userRandomID",
@@ -56,18 +69,22 @@ const users = {
   },
 };
 
+//Start the Express server
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
 
 app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
+//Return the URL database as a JSON response
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+//If user is logged in, retrieves URLs associated with user and renders the urls_index template
 app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
     return res.status(401).send("You cannot view your URLS if you are not logged in.");
@@ -82,6 +99,7 @@ app.get("/urls", (req, res) => {
 
 });
 
+//If user logged in, prepares template variables and renders the urls_new template
 app.get("/urls/new", (req, res) => {
   if (req.session.user_id) {
     const templateVars = {
@@ -93,6 +111,7 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
+//Performs check on URL, user, and and userID, then deletes from urlDatabase and redirects to '/urls'
 app.post("/urls/:id/delete", (req, res) => {
   const userId = req.session.user_id;
   const urlId = req.params.id;
@@ -111,6 +130,7 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect('/urls');
 });
 
+//Extracts id parameter and updates the longURL with the corresponding id
 app.post("/urls/:id", (req, res) => {
   const id = req.params.id;
   const newLongURL = req.body.longURL;
@@ -118,6 +138,7 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
+//
 app.get("/urls/:id", (req, res) => {
   const userId = req.session.user_id;
   const urlId = req.params.id;
