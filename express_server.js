@@ -176,18 +176,18 @@ app.post("/urls", (req, res) => {
 
 app.get("/u/:id", (req, res) => {
   const shortURL = req.params.id;
-  const longURL = urlDatabase[shortURL];
-  if (!longURL) {
-    res.status(404).send("That URL does not exist.");
+  const url = urlDatabase[shortURL];
+  if (!url) {
+    res.status(404).render("error", { errorMessage: "URL not found." });
   } else {
-    res.redirect(longURL.longURL);
+    res.redirect(url.longURL);
   }
 });
 
 app.post("/login", (req, res) => {
   const { email, password} = req.body;
   const user = getUserByEmail(email, users);
-  if (!user || user.password !== password) {
+  if (!user) {
     res.status(403).send("Error 403: Invalid email or password");
     return;
   }
@@ -209,7 +209,7 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("session");
+  req.session = null;
   res.redirect("/login");
 });
 
